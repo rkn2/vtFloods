@@ -1,578 +1,447 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flood Adaptation for Historic Buildings</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <style>
-        /* Custom styles using Inter font and blue theme */
-        body {
-            font-family: 'Inter', sans-serif;
-            /* Ensures smooth scrolling behavior */
-            scroll-behavior: smooth;
-        }
-        .section-title {
-            font-weight: 600;
-            color: #1e3a8a; /* Tailwind's blue-800 for section titles */
-        }
-        .step-title { /* Used for main step titles and funding source titles */
-            font-weight: 500;
-            color: #2563eb; /* Tailwind's blue-600 */
-        }
-        .step-description {
-            color: #4b5563; /* Tailwind's gray-600, slightly darker for better readability */
-            line-height: 1.7;
-        }
-        .eligibility-info { /* Specific style for eligibility paragraphs */
-            color: #374151; /* Tailwind's gray-700 */
-            font-size: 0.95rem;
-        }
-        .caution {
-            color: #dc2626; /* Tailwind's red-600 for caution messages */
-            font-weight: 500;
-        }
-        .note {
-            color: #1d4ed8; /* Tailwind's blue-700 for notes */
-            font-weight: 500;
-        }
-        /* Styles for flowchart steps visibility */
-        .flowchart-step {
-            display: none; /* Hidden by default */
-            padding-bottom: 2rem; /* Adds some space at the bottom of each step */
-        }
-        .flowchart-step.active {
-            display: block; /* Shown when active */
-        }
-        /* Common button styles (action, next, prev) */
-        .action-btn, .next-btn, .prev-btn {
-            background-color: #2563eb; /* Tailwind's blue-600 */
-            color: white;
-            padding: 0.75rem 1.5rem; /* p-3 px-6 */
-            border-radius: 0.375rem; /* rounded-md */
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease; /* Added transform for subtle click effect */
-            margin-top: 1rem; /* mt-4 */
-            display: inline-flex; /* Aligns icon and text */
-            align-items: center; /* Vertically centers icon and text */
-            gap: 0.5rem; /* gap-2, space between icon and text */
-            border: none; /* Remove default border */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow */
-        }
-        .action-btn:hover, .next-btn:hover, .prev-btn:hover {
-            background-color: #3b82f6; /* Tailwind's blue-500 on hover */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Slightly larger shadow on hover */
-        }
-        .action-btn:active, .next-btn:active, .prev-btn:active {
-            transform: translateY(1px); /* Subtle press effect */
-        }
-        .action-btn:disabled, .next-btn:disabled, .prev-btn:disabled {
-            background-color: #9ca3af; /* Tailwind's gray-400 for disabled state */
-            cursor: not-allowed;
-            opacity: 0.7; /* Slightly more opaque for better visibility */
-            box-shadow: none; /* No shadow when disabled */
-        }
-        /* Progress bar container styles */
-        .progress-bar-container {
-            margin-bottom: 1rem; /* mb-4 */
-            padding-top: 0.5rem; /* pt-2, space above progress bar */
-        }
-        /* Progress bar main element */
-        .progress-bar {
-            background-color: #e5e7eb; /* Tailwind's gray-200 */
-            height: 0.75rem; /* h-3, slightly thicker */
-            border-radius: 0.75rem; /* rounded-full */
-            position: relative; /* For absolute positioning of the fill */
-            overflow: hidden; /* Ensures fill stays within rounded corners */
-        }
-        /* Progress bar fill element */
-        .progress-bar-fill {
-            background-color: #2563eb; /* Tailwind's blue-600 */
-            height: 100%;
-            border-radius: 0.75rem; /* rounded-full */
-            width: 0%; /* Initial width */
-            transition: width 0.4s ease-in-out; /* Smoother transition */
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        /* Progress text style */
-        .progress-text {
-            color: #1e3a8a; /* Tailwind's blue-800, darker for better contrast */
-            font-weight: 500; /* medium */
-            margin-bottom: 0.5rem; /* mb-2 */
-            text-align: center;
-        }
-        /* Styling for list items within step descriptions for better readability */
-        .step-description ul, .eligibility-info ul {
-            margin-top: 0.5rem; /* mt-2 */
-            margin-bottom: 1rem; /* mb-4 */
-        }
-        .step-description ul li, .eligibility-info ul li {
-            margin-bottom: 0.25rem; /* mb-1 */
-        }
-        .step-description ul ul, .eligibility-info ul ul { /* Nested lists */
-            margin-top: 0.25rem; /* mt-1 */
-            margin-left: 1rem; /* ml-4, indent nested lists */
-        }
-        .funding-source-link {
-            color: #1d4ed8; /* Tailwind's blue-700 */
-            text-decoration: underline;
-            font-weight: 500;
-        }
-        .funding-source-link:hover {
-            color: #3b82f6; /* Tailwind's blue-500 */
-        }
-    </style>
-</head>
-<body class="bg-gray-100 text-gray-800">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+import React, { useState, useEffect, Fragment } from 'react';
 
-        <section id="landing-page" class="flowchart-step active text-center">
-            <h1 class="text-3xl sm:text-4xl font-semibold text-gray-800 mb-6">Adapting Historic Buildings for Flood Resilience</h1>
-            <p class="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
-                Protecting our heritage requires thoughtful planning and action. Choose your path below to learn more about engineering processes or available funding.
+// --- Data Definition ---
+const siteData = [
+    // 1. Landing Page
+    {
+        id: 'landing-page',
+        type: 'landing',
+        title: 'Adapting Historic Buildings for Flood Resilience',
+        mainDescription: 'Protecting our heritage requires thoughtful planning and action. Choose your path below to learn more about engineering processes or available funding.',
+        actions: [
+            { text: 'View Engineering Guide', icon: 'fa-hard-hat', target: 'engineering-hub', style: 'bg-blue-600 hover:bg-blue-500' },
+            { text: 'Explore Funding Options', icon: 'fa-dollar-sign', target: 'funding-options', style: 'bg-green-600 hover:bg-green-500' }
+        ],
+        footerText: 'The engineering guide provides a step-by-step process for planning and executing flood adaptation projects. Funding options explore potential grants, loans, and other financial resources.'
+    },
+    // 2. Funding Options Page
+    {
+        id: 'funding-options',
+        type: 'funding',
+        title: 'Funding Opportunities for Flood Adaptation',
+        previousStepId: 'landing-page',
+        sources: [
+             {
+                name: 'HUD CDBG-DR (Community Development Block Grant - Disaster Recovery)',
+                eligibility: 'Provides flexible grants to state, local, tribal, or territorial governments to recover from Presidentially declared disasters, especially in low- and moderate-income areas. Funds address unmet needs in long-term recovery, housing, infrastructure, and economic revitalization. Availability is subject to supplemental appropriations by Congress.',
+                link: 'https://www.hud.gov/hud-partners/community-cdbg-dr'
+            },
+            {
+                name: 'HUD CDBG Mitigation Funds (CDBG-MIT)',
+                eligibility: 'Eligible applicants are state, local, tribal, or territorial governments. These funds are for strategic, high-impact activities to mitigate disaster risks and reduce future losses in areas impacted by recent disasters, with a focus on low- and moderate-income areas.',
+                link: 'https://www.hudexchange.info/programs/cdbg-mit/'
+            },
+            {
+                name: 'Land and Water Conservation Fund (LWCF) - State and Local Assistance',
+                eligibility: 'Grants are provided to state lead agencies. Local governments and federally recognized Tribal Governments can be subrecipients. Funds support the acquisition and development of public outdoor recreation sites and facilities. Projects must align with a Statewide Comprehensive Outdoor Recreation Plan (SCORP). A 1:1 non-federal match is typically required.',
+                link: 'https://lwcfcoalition.org/state-and-local-assistance'
+            },
+            {
+                name: 'US Economic Development Administration (EDA) - Disaster Supplemental',
+                eligibility: 'Eligible applicants include Tribal nations, non-profit organizations, colleges/universities, EDD district organizations, and state, county, or city subdivisions involved in economic/infrastructure activities. This program addresses economic challenges in areas with a Presidential major disaster declaration (e.g., from specific 2021/2022 hurricanes, wildfires, floods). Supports long-term economic recovery strategies.',
+                link: 'https://sfgrants.eda.gov/s/funding-program/a2j3d0000000twKAAQ/fy-2023-disaster-supplemental'
+            },
+            {
+                name: 'Arts and Humanities Councils & Historic Preservation Funding',
+                eligibility: "Funding for historic properties often comes through state historic preservation offices (SHPOs) via the National Park Service's Historic Preservation Fund (HPF).\n<strong>NPS HPF Grants:</strong> Matching grants to states for identification, evaluation, and protection of historic properties. States may pass funds to local projects.\n<strong>Save America's Treasures (NPS):</strong> For nationally significant historic properties (listed on National Register or National Historic Landmarks).\n<strong>FEMA Public Assistance:</strong> After a Presidential disaster declaration, state, local, tribal, territorial governments, and certain private non-profits (like museums) can apply for funds (through their state/tribe/territory) to repair/restore cultural facilities, including mitigation.\nCheck with your State Historic Preservation Office (SHPO) and local/state arts and humanities councils for specific programs.",
+                link: null
+            },
+            {
+                name: 'National Recreation and Park Association (NRPA) - Grant Resources',
+                eligibility: 'NRPA often lists federal grant opportunities relevant to parks and recreation, which can include flood resilience projects. Eligibility depends on the specific federal program (e.g., FEMA grants like Public Assistance or Flood Mitigation Assistance, or DOI grants like LWCF). Typically, eligible applicants are state, local, tribal governments, and sometimes non-profits.',
+                link: 'https://www.nrpa.org/our-work/Grant-Fundraising-Resources/'
+            },
+            {
+                name: 'USDA Rural Development',
+                eligibility: "<strong>Community Facilities Program Disaster Grants:</strong> For public bodies, community-based non-profits, and federally recognized Tribes in rural areas (population under 20,000) to repair or replace essential community facilities damaged by Presidentially Declared Disasters (specific years apply).\n<strong>Single Family Housing Rural Disaster Home Repair Grants:</strong> For very-low and low-income homeowners in eligible rural areas to repair homes damaged in a Presidentially Declared Disaster Area (specific years apply).",
+                links: [
+                    { text: 'USDA Community Facilities Disaster Grants', url: 'https://www.rd.usda.gov/programs-services/community-facilities/community-facilities-program-disaster-grants' },
+                    { text: 'USDA Rural Disaster Home Repair Grants', url: 'https://www.rd.usda.gov/programs-services/single-family-housing-programs/single-family-housing-rural-disaster-home-repair-grants' }
+                ]
+            }
+        ]
+    },
+    // 3. Engineering Guide Main Hub
+    {
+        id: 'engineering-hub',
+        type: 'engineering-main-hub',
+        title: 'Engineering Guide',
+        previousStepId: 'landing-page',
+        introText: "This section outlines the engineering steps involved in planning and executing flood adaptation projects for historic buildings. Select a category below to explore detailed steps.",
+        actions: [
+            { text: 'Design Phase', icon: 'fa-drafting-compass', target: 'design-section-hub', style: 'bg-blue-600 hover:bg-blue-500' },
+            { text: 'Permitting & Bidding', icon: 'fa-file-signature', target: 'permitting-section-hub', style: 'bg-blue-600 hover:bg-blue-500' },
+            { text: 'Construction Phase', icon: 'fa-hard-hat', target: 'construction-section-hub', style: 'bg-blue-600 hover:bg-blue-500' },
+            { text: 'View Conclusion', icon: 'fa-flag-checkered', target: 'engineering-conclusion', style: 'bg-gray-500 hover:bg-gray-400' }
+        ]
+    },
+    // 4. Design Section Hub
+    {
+        id: 'design-section-hub',
+        type: 'engineering-section-hub',
+        title: 'Design Phase Overview',
+        previousStepId: 'engineering-hub',
+        introText: "The design phase is critical. It involves careful planning, assessment, and developing strategies that balance flood protection with preserving historic character. Explore the steps below.",
+        steps: [
+            { id: 'design-step-1', title: '1. Hire Design Professionals' },
+            { id: 'design-step-2', title: '2. Feasibility Study' },
+            { id: 'design-step-3', title: '3. Design Development' },
+            { id: 'design-step-4', title: '4. Construction Documents' }
+        ]
+    },
+    // Design Phase Individual Steps
+    {
+        id: 'design-step-1', type: 'engineering-step', title: '1. Hire Design Professionals', previousStepId: 'design-section-hub', nextStepId: 'design-step-2',
+        content: { description: 'Engage qualified professionals, including:', items: ['<strong>Structural Engineer:</strong> To assess the building\'s structural integrity and design necessary modifications.', '<strong>Architect:</strong> With expertise in historic preservation to ensure adaptations are sensitive to the building\'s historical significance.', '<strong>Hydrologist/Civil Engineer:</strong> To analyze flood risks and design appropriate mitigation measures.'], caution: 'Experience with historic buildings is essential.' }
+    },
+    {
+        id: 'design-step-2', type: 'engineering-step', title: '2. Feasibility Study', previousStepId: 'design-step-1', nextStepId: 'design-step-3',
+        content: { description: 'Conduct a comprehensive study to understand the flood risks and potential adaptation strategies.', items: [ '<strong>Identify Flood Risk and Define Flood Hazards:</strong> Determine flood elevation, sources of water intrusion, and potential impacts.', '<strong>Identify Relevant Code Requirements:</strong> Research local, state, and federal regulations, including those related to historic preservation and floodplain management.', { text: '<strong>Identify Flood Mitigation Strategies:</strong> Explore various options, such as:', subItems: [ 'Wet Floodproofing: Allowing floodwater to enter the building while minimizing damage.', 'Dry Floodproofing: Making the building watertight.', 'Elevation: Raising the building above the flood level.', 'Relocation: Moving the building to a safer location (least preferred for historic structures).' ] }, '<strong>Recommend Flood Adaptation to Implement:</strong> Select the most suitable strategy based on the building\'s characteristics, risks, and preservation goals.', { text: '<strong>Consider Short-Term Adaptations:</strong> Implement non-permit measures like:', subItems: [ 'Installing flood shields for doors and windows.', 'Relocating valuable items to higher floors.', 'Developing a flood emergency plan.' ] }, '<strong>Obtain a Cost Estimate:</strong> Get a preliminary cost estimate from a contractor or cost estimator.' ] }
+    },
+    {
+        id: 'design-step-3', type: 'engineering-step', title: '3. Design Development', previousStepId: 'design-step-2', nextStepId: 'design-step-4',
+        content: { description: 'Develop the chosen adaptation strategy into detailed plans.', items: [ '<strong>Develop Drawings and Specifications:</strong> Create detailed architectural and engineering drawings and specifications for the chosen adaptation measures.', '<strong>Confirm Permit Requirements:</strong> Verify all necessary permits, including those for construction and historic preservation.', '<strong>Historic Preservation Review:</strong> Obtain approval from relevant historic preservation authorities to ensure the design complies with preservation guidelines.', '<strong>Construction Permit:</strong> Secure the necessary construction permits.', '<strong>Flood Review:</strong> Ensure the design meets flood insurance requirements (if applicable).', { text: '<strong>Consider Other Requirements:</strong>', subItems: [ '<strong>Energy Requirements:</strong> Evaluate the energy efficiency of the proposed adaptations.', '<strong>Stormwater Management:</strong> Address potential impacts on stormwater runoff.', '<strong>Erosion and Sediment Control:</strong> Plan for erosion and sediment control during construction.', '<strong>Endangered Species:</strong> Assess and mitigate any potential impacts on endangered species or their habitats.' ] }, '<strong>Update Cost Estimate:</strong> Refine the cost estimate based on the detailed design.' ] }
+    },
+    {
+        id: 'design-step-4', type: 'engineering-step', title: '4. Construction Documents', previousStepId: 'design-step-3', nextStepId: 'design-section-hub', // Last step in section goes back to section hub
+        content: { description: 'Finalize the design documents for construction.', items: [ '<strong>Complete Drawings and Specifications:</strong> Prepare the final set of drawings and specifications for bidding and construction.', '<strong>Update Cost Estimate:</strong> Update the cost estimate to reflect the final design.' ] }
+    },
+    // 5. Permitting & Bidding Section Hub
+    {
+        id: 'permitting-section-hub',
+        type: 'engineering-section-hub',
+        title: 'Permitting & Bidding Overview',
+        previousStepId: 'engineering-hub',
+        introText: "This phase involves obtaining necessary permits and selecting a qualified contractor. Follow the steps outlined below.",
+        steps: [
+            { id: 'permitting-step-1', title: '5. Permitting and Contractor Bidding' }
+        ]
+    },
+    // Permitting & Bidding Individual Steps
+    {
+        id: 'permitting-step-1', type: 'engineering-step', title: '5. Permitting and Contractor Bidding', previousStepId: 'permitting-section-hub', nextStepId: 'permitting-section-hub', // Last step in section
+        content: { description: 'Obtain the necessary permits and select a qualified contractor.', items: [ '<strong>Submit Design Documents to Obtain Required Permits:</strong> Submit the completed design documents to the relevant authorities.', { text: '<strong>Construction:</strong> Be prepared for site inspections during the construction process.', subItems: [ '<strong>Historic Review:</strong> Ensure ongoing compliance with historic preservation guidelines during construction.', '<strong>Floodplain Management:</strong> Adhere to floodplain management regulations (if applicable).', '<strong>Erosion Control:</strong> Implement erosion and sediment control measures as required.', '<strong>Stormwater Management:</strong> Manage stormwater runoff according to the approved plan.' ] }, '<strong>Invite Contractors to Bid on the Project:</strong> Prepare a bid package and invite qualified contractors to submit proposals.', '<strong>Review Bid RFIs:</strong> Address any questions or requests for information from bidding contractors.', '<strong>Review Bids:</strong> Evaluate the bids based on cost, qualifications, experience, and references.', '<strong>Interview Contractors:</strong> Interview shortlisted contractors to assess their suitability for the project.', '<strong>Select Contractor:</strong> Choose the contractor that best meets the project\'s needs and budget.' ] }
+    },
+    // 6. Construction Section Hub
+    {
+        id: 'construction-section-hub',
+        type: 'engineering-section-hub',
+        title: 'Construction Phase Overview',
+        previousStepId: 'engineering-hub',
+        introText: "This phase covers the execution of the flood adaptation project according to the approved design and schedule.",
+        steps: [
+            { id: 'construction-step-1', title: '6. Construction' }
+        ]
+    },
+    // Construction Phase Individual Steps
+    {
+        id: 'construction-step-1', type: 'engineering-step', title: '6. Construction', previousStepId: 'construction-section-hub', nextStepId: 'construction-section-hub', // Last step in section
+        content: { description: 'Execute the flood adaptation project according to the approved design and schedule.', items: [ '<strong>Review the Construction Schedule & Final Budget:</strong> Ensure the project stays on track and within budget.', '<strong>Build the Flood Adaptation:</strong> Oversee the construction process, ensuring compliance with the design documents, building codes, and historic preservation guidelines.' ] }
+    },
+    // 7. Engineering Guide Conclusion
+    {
+        id: 'engineering-conclusion',
+        type: 'engineering-step', // Reusing for simplicity, could be 'engineering-final'
+        title: 'Engineering Guide: Conclusion',
+        previousStepId: 'engineering-hub',
+        nextStepId: 'landing-page',
+        content: { // Structure to match EngineeringStepPage expectation
+            description: "Adapting historic buildings to flood risks requires a careful and methodical approach. By following these engineering steps and working with qualified professionals, it's possible to protect these valuable structures for future generations while preserving their unique heritage.",
+            note: "This guide provides a general framework. Specific requirements and processes may vary depending on local regulations and the unique characteristics of the historic building."
+        }
+    }
+];
+
+
+// --- Reusable Button Component ---
+const ActionButton = ({ text, icon, onClick, targetId, styleClass = 'bg-blue-600 hover:bg-blue-500', disabled = false, fullWidth = false }) => {
+    return (
+        <button
+            onClick={() => onClick(targetId)}
+            disabled={disabled}
+            className={`text-lg py-3 px-6 rounded-md font-medium text-white transition-colors duration-300 ease-in-out inline-flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:translate-y-px ${styleClass} ${disabled ? 'bg-gray-400 cursor-not-allowed opacity-70' : ''} ${fullWidth ? 'w-full' : 'sm:w-auto'}`}
+        >
+            {icon && <i className={`fas ${icon} mr-2`}></i>}
+            {text}
+        </button>
+    );
+};
+
+// --- Landing Page Component ---
+const LandingPage = ({ data, onNavigate }) => {
+    // Same as before
+    return (
+        <section id="landing-page" className="text-center py-10">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-gray-800 mb-6">{data.title}</h1>
+            <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
+                {data.mainDescription}
             </p>
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <button data-next="introduction" class="action-btn text-lg w-full sm:w-auto">
-                    <i class="fas fa-hard-hat"></i>
-                    View Engineering Guide
-                </button>
-                <button data-next="funding-options" id="funding-options-btn-nav" class="action-btn text-lg w-full sm:w-auto bg-green-600 hover:bg-green-500">
-                    <i class="fas fa-dollar-sign"></i>
-                    Explore Funding Options
-                </button>
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                {data.actions.map(action => (
+                    <ActionButton
+                        key={action.target}
+                        text={action.text}
+                        icon={action.icon}
+                        onClick={onNavigate}
+                        targetId={action.target}
+                        styleClass={action.style}
+                    />
+                ))}
             </div>
-            <p class="text-center text-sm text-gray-600 mt-8">
-                The engineering guide provides a step-by-step process for planning and executing flood adaptation projects.
-                Funding options explore potential grants, loans, and other financial resources.
+            <p className="text-center text-sm text-gray-600 mt-8">
+                {data.footerText}
             </p>
         </section>
+    );
+};
 
-        <section id="funding-options" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-6">Funding Opportunities for Flood Adaptation</h2>
-            <div class="space-y-8">
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">HUD CDBG-DR (Community Development Block Grant - Disaster Recovery)</h3>
-                    <p class="eligibility-info mb-2">
-                        Provides flexible grants to state, local, tribal, or territorial governments to recover from Presidentially declared disasters, especially in low- and moderate-income areas. Funds address unmet needs in long-term recovery, housing, infrastructure, and economic revitalization. Availability is subject to supplemental appropriations by Congress.
-                    </p>
-                    <a href="https://www.hud.gov/hud-partners/community-cdbg-dr" target="_blank" class="funding-source-link">Learn more about CDBG-DR <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">HUD CDBG Mitigation Funds (CDBG-MIT)</h3>
-                    <p class="eligibility-info mb-2">
-                        Eligible applicants are state, local, tribal, or territorial governments. These funds are for strategic, high-impact activities to mitigate disaster risks and reduce future losses in areas impacted by recent disasters, with a focus on low- and moderate-income areas.
-                    </p>
-                    <a href="https://www.hudexchange.info/programs/cdbg-mit/" target="_blank" class="funding-source-link">Learn more about CDBG-MIT <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">Land and Water Conservation Fund (LWCF) - State and Local Assistance</h3>
-                    <p class="eligibility-info mb-2">
-                        Grants are provided to state lead agencies. Local governments and federally recognized Tribal Governments can be subrecipients. Funds support the acquisition and development of public outdoor recreation sites and facilities. Projects must align with a Statewide Comprehensive Outdoor Recreation Plan (SCORP). A 1:1 non-federal match is typically required.
-                    </p>
-                    <a href="https://lwcfcoalition.org/state-and-local-assistance" target="_blank" class="funding-source-link">Learn more about LWCF <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">US Economic Development Administration (EDA) - Disaster Supplemental</h3>
-                    <p class="eligibility-info mb-2">
-                        Eligible applicants include Tribal nations, non-profit organizations, colleges/universities, EDD district organizations, and state, county, or city subdivisions involved in economic/infrastructure activities. This program addresses economic challenges in areas with a Presidential major disaster declaration (e.g., from specific 2021/2022 hurricanes, wildfires, floods). Supports long-term economic recovery strategies.
-                    </p>
-                    <a href="https://sfgrants.eda.gov/s/funding-program/a2j3d0000000twKAAQ/fy-2023-disaster-supplemental" target="_blank" class="funding-source-link">Learn more about EDA Disaster Supplemental <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">Arts and Humanities Councils & Historic Preservation Funding</h3>
-                    <p class="eligibility-info mb-2">
-                        Funding for historic properties often comes through state historic preservation offices (SHPOs) via the National Park Service's Historic Preservation Fund (HPF).
-                        <strong>NPS HPF Grants:</strong> Matching grants to states for identification, evaluation, and protection of historic properties. States may pass funds to local projects.
-                        <strong>Save America's Treasures (NPS):</strong> For nationally significant historic properties (listed on National Register or National Historic Landmarks).
-                        <strong>FEMA Public Assistance:</strong> After a Presidential disaster declaration, state, local, tribal, territorial governments, and certain private non-profits (like museums) can apply for funds (through their state/tribe/territory) to repair/restore cultural facilities, including mitigation.
-                    </p>
-                    <p class="eligibility-info">Check with your State Historic Preservation Office (SHPO) and local/state arts and humanities councils for specific programs.</p>
-                </div>
-
-                <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">National Recreation and Park Association (NRPA) - Grant Resources</h3>
-                    <p class="eligibility-info mb-2">
-                        NRPA often lists federal grant opportunities relevant to parks and recreation, which can include flood resilience projects. Eligibility depends on the specific federal program (e.g., FEMA grants like Public Assistance or Flood Mitigation Assistance, or DOI grants like LWCF). Typically, eligible applicants are state, local, tribal governments, and sometimes non-profits.
-                    </p>
-                     <a href="https://www.nrpa.org/our-work/Grant-Fundraising-Resources/" target="_blank" class="funding-source-link">Explore NRPA Grant Resources <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
-                 <div class="p-6 bg-white rounded-lg shadow-md">
-                    <h3 class="step-title text-xl mb-2">USDA Rural Development</h3>
-                    <p class="eligibility-info mb-2">
-                        <strong>Community Facilities Program Disaster Grants:</strong> For public bodies, community-based non-profits, and federally recognized Tribes in rural areas (population under 20,000) to repair or replace essential community facilities damaged by Presidentially Declared Disasters (specific years apply).
-                        <strong>Single Family Housing Rural Disaster Home Repair Grants:</strong> For very-low and low-income homeowners in eligible rural areas to repair homes damaged in a Presidentially Declared Disaster Area (specific years apply).
-                    </p>
-                    <a href="https://www.rd.usda.gov/programs-services/community-facilities/community-facilities-program-disaster-grants" target="_blank" class="funding-source-link">USDA Community Facilities Disaster Grants <i class="fas fa-external-link-alt text-xs"></i></a><br>
-                    <a href="https://www.rd.usda.gov/programs-services/single-family-housing-programs/single-family-housing-rural-disaster-home-repair-grants" target="_blank" class="funding-source-link mt-1 inline-block">USDA Rural Disaster Home Repair Grants <i class="fas fa-external-link-alt text-xs"></i></a>
-                </div>
-
+// --- Funding Options Page Component ---
+const FundingOptionsPage = ({ data, onNavigate }) => {
+    // Same as before
+    return (
+        <section id="funding-options" className="py-10">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-blue-800 mb-6">{data.title}</h2>
+            <div className="space-y-8">
+                {data.sources.map(source => (
+                    <div key={source.name} className="p-6 bg-white rounded-lg shadow-md">
+                        <h3 className="text-xl font-medium text-blue-600 mb-2">{source.name}</h3>
+                        <p className="text-gray-700 text-sm leading-relaxed mb-3" dangerouslySetInnerHTML={{ __html: source.eligibility }}></p>
+                        {source.link && (
+                            <a href={source.link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-500 font-medium underline">
+                                Learn more about {source.name.split('(')[0].trim()} <i className="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        )}
+                        {source.links && source.links.map(linkItem => (
+                             <a key={linkItem.url} href={linkItem.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-500 font-medium underline block mt-1">
+                                {linkItem.text} <i className="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        ))}
+                    </div>
+                ))}
             </div>
-            <div class="mt-8 flex justify-start"> <button data-previous="landing-page" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to Main
-                </button>
+            <div className="mt-8 flex justify-start">
+                <ActionButton
+                    text="Back to Main"
+                    icon="fa-arrow-left"
+                    onClick={onNavigate}
+                    targetId={data.previousStepId}
+                />
             </div>
         </section>
+    );
+};
 
-        <div id="progress-bar-container" class="progress-bar-container" style="display: none;">
-            <div class="progress-text" id="progress-text"></div>
-            <div class="progress-bar">
-                <div class="progress-bar-fill" id="progress-fill"></div>
+// --- Engineering Main Hub Page Component ---
+const EngineeringMainHubPage = ({ data, onNavigate }) => {
+    return (
+        <section id={data.id} className="py-10 text-center">
+            <h2 className="text-3xl sm:text-4xl font-semibold text-blue-800 mb-6">{data.title}</h2>
+            <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">{data.introText}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
+                {data.actions.filter(action => action.target !== 'engineering-conclusion').map(action => (
+                    <ActionButton
+                        key={action.target}
+                        text={action.text}
+                        icon={action.icon}
+                        onClick={onNavigate}
+                        targetId={action.target}
+                        styleClass={`${action.style} py-6 text-xl`} // Larger buttons for hub
+                        fullWidth={true}
+                    />
+                ))}
             </div>
-        </div>
-
-        <section id="introduction" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-4">Engineering Guide: Introduction</h2>
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-                <p class="step-description">
-                    Historic buildings face unique challenges when adapting to flood risks. This guide outlines the engineering steps involved in planning and executing flood adaptation projects, ensuring the preservation of historical integrity while enhancing resilience. It is crucial to work with professionals experienced in both historic preservation and flood mitigation.
-                </p>
-            </div>
-            <div class="mt-6 flex justify-between">
-                <button data-previous="landing-page" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Back to Main
-                </button>
-                <button data-next="design-phase" class="next-btn">
-                    Next: Design Phase
-                    <i class="fas fa-arrow-right"></i>
-                </button>
+             <div className="mt-8 flex flex-col items-center gap-4">
+                {data.actions.find(action => action.target === 'engineering-conclusion') &&
+                    <ActionButton
+                        key='engineering-conclusion-btn'
+                        text={data.actions.find(action => action.target === 'engineering-conclusion').text}
+                        icon={data.actions.find(action => action.target === 'engineering-conclusion').icon}
+                        onClick={onNavigate}
+                        targetId='engineering-conclusion'
+                        styleClass={`${data.actions.find(action => action.target === 'engineering-conclusion').style} sm:w-auto`}
+                    />
+                }
+                <ActionButton
+                    text="Back to Main Menu"
+                    icon="fa-arrow-left"
+                    onClick={onNavigate}
+                    targetId={data.previousStepId}
+                    styleClass="bg-gray-500 hover:bg-gray-400 sm:w-auto"
+                />
             </div>
         </section>
+    );
+};
 
-        <section id="design-phase" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-4">Design Phase</h2>
-            <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
-                <p class="step-description">
-                    The design phase is critical for a successful flood adaptation project. It involves careful planning, assessment, and the development of strategies that balance flood protection with the preservation of the building's historic character.
-                </p>
+// --- Engineering Section Hub Page Component ---
+const EngineeringSectionHubPage = ({ data, onNavigate }) => {
+    return (
+        <section id={data.id} className="py-10">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-blue-800 mb-4">{data.title}</h2>
+            <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+                <p className="text-gray-600 leading-relaxed">{data.introText}</p>
             </div>
-
-            <div class="mb-6 p-6 bg-white rounded-lg shadow-md">
-                <h3 class="step-title text-xl mb-3">1. Hire Design Professionals</h3>
-                <p class="step-description mb-2">
-                    Engage qualified professionals, including:
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Structural Engineer:</strong> To assess the building's structural integrity and design necessary modifications.</li>
-                    <li><strong>Architect:</strong> With expertise in historic preservation to ensure adaptations are sensitive to the building's historical significance.</li>
-                    <li><strong>Hydrologist/Civil Engineer:</strong> To analyze flood risks and design appropriate mitigation measures.</li>
-                </ul>
-                <p class="caution text-sm mt-3">
-                    <i class="fas fa-exclamation-triangle mr-1"></i><span class="font-semibold">Caution:</span> Experience with historic buildings is essential.
-                </p>
+            <div className="space-y-4 mb-8">
+                {data.steps.map(step => (
+                    <ActionButton
+                        key={step.id}
+                        text={step.title}
+                        onClick={onNavigate}
+                        targetId={step.id}
+                        styleClass="bg-blue-500 hover:bg-blue-400 w-full text-left justify-start"
+                        icon="fa-arrow-circle-right"
+                    />
+                ))}
             </div>
-
-            <div class="mb-6 p-6 bg-white rounded-lg shadow-md">
-                <h3 class="step-title text-xl mb-3">2. Feasibility Study</h3>
-                <p class="step-description mb-2">
-                    Conduct a comprehensive study to understand the flood risks and potential adaptation strategies.
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Identify Flood Risk and Define Flood Hazards:</strong> Determine flood elevation, sources of water intrusion, and potential impacts.</li>
-                    <li><strong>Identify Relevant Code Requirements:</strong> Research local, state, and federal regulations, including those related to historic preservation and floodplain management.</li>
-                    <li><strong>Identify Flood Mitigation Strategies:</strong> Explore various options, such as:
-                        <ul class="list-disc list-inside ml-6">
-                            <li>Wet Floodproofing: Allowing floodwater to enter the building while minimizing damage.</li>
-                            <li>Dry Floodproofing: Making the building watertight.</li>
-                            <li>Elevation: Raising the building above the flood level.</li>
-                            <li>Relocation: Moving the building to a safer location (least preferred for historic structures).</li>
-                        </ul>
-                    </li>
-                    <li><strong>Recommend Flood Adaptation to Implement:</strong> Select the most suitable strategy based on the building's characteristics, risks, and preservation goals.</li>
-                    <li><strong>Consider Short-Term Adaptations:</strong> Implement non-permit measures like:
-                         <ul class="list-disc list-inside ml-6">
-                            <li>Installing flood shields for doors and windows.</li>
-                            <li>Relocating valuable items to higher floors.</li>
-                            <li>Developing a flood emergency plan.</li>
-                        </ul>
-                    </li>
-                    <li><strong>Obtain a Cost Estimate:</strong> Get a preliminary cost estimate from a contractor or cost estimator.</li>
-                </ul>
-            </div>
-
-            <div class="mb-6 p-6 bg-white rounded-lg shadow-md">
-                <h3 class="step-title text-xl mb-3">3. Design Development</h3>
-                <p class="step-description mb-2">
-                    Develop the chosen adaptation strategy into detailed plans.
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Develop Drawings and Specifications:</strong> Create detailed architectural and engineering drawings and specifications for the chosen adaptation measures.</li>
-                    <li><strong>Confirm Permit Requirements:</strong> Verify all necessary permits, including those for construction and historic preservation.</li>
-                    <li><strong>Historic Preservation Review:</strong> Obtain approval from relevant historic preservation authorities to ensure the design complies with preservation guidelines.</li>
-                    <li><strong>Construction Permit:</strong> Secure the necessary construction permits.</li>
-                    <li><strong>Flood Review:</strong> Ensure the design meets flood insurance requirements (if applicable).</li>
-                    <li><strong>Consider Other Requirements:</strong>
-                        <ul class="list-disc list-inside ml-6">
-                            <li><strong>Energy Requirements:</strong> Evaluate the energy efficiency of the proposed adaptations.</li>
-                            <li><strong>Stormwater Management:</strong> Address potential impacts on stormwater runoff.</li>
-                            <li><strong>Erosion and Sediment Control:</strong> Plan for erosion and sediment control during construction.</li>
-                             <li><strong>Endangered Species:</strong> Assess and mitigate any potential impacts on endangered species or their habitats.</li>
-                        </ul>
-                    </li>
-                    <li><strong>Update Cost Estimate:</strong> Refine the cost estimate based on the detailed design.</li>
-                </ul>
-            </div>
-
-            <div class="mb-6 p-6 bg-white rounded-lg shadow-md">
-                <h3 class="step-title text-xl mb-3">4. Construction Documents</h3>
-                <p class="step-description mb-2">
-                    Finalize the design documents for construction.
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Complete Drawings and Specifications:</strong> Prepare the final set of drawings and specifications for bidding and construction.</li>
-                    <li><strong>Update Cost Estimate:</strong> Update the cost estimate to reflect the final design.</li>
-                </ul>
-            </div>
-            <div class="mt-6 flex justify-between">
-                <button data-previous="introduction" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Previous: Introduction
-                </button>
-                <button data-next="permitting-bidding" class="next-btn">
-                    Next: Permitting & Bidding
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
+            <ActionButton
+                text="Back to Engineering Guide"
+                icon="fa-arrow-left"
+                onClick={onNavigate}
+                targetId={data.previousStepId}
+            />
         </section>
+    );
+};
 
-        <section id="permitting-bidding" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-4">Permitting and Contractor Bidding</h2>
-             <div class="mb-6 p-6 bg-white rounded-lg shadow-lg">
-                <h3 class="step-title text-xl mb-3">5. Permitting and Contractor Bidding</h3>
-                <p class="step-description mb-2">
-                    Obtain the necessary permits and select a qualified contractor.
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Submit Design Documents to Obtain Required Permits:</strong> Submit the completed design documents to the relevant authorities.</li>
-                    <li><strong>Construction:</strong> Be prepared for site inspections during the construction process.</li>
-                    <ul class="list-disc list-inside ml-6">
-                         <li><strong>Historic Review:</strong> Ensure ongoing compliance with historic preservation guidelines during construction.</li>
-                        <li><strong>Floodplain Management:</strong> Adhere to floodplain management regulations (if applicable).</li>
-                        <li><strong>Erosion Control:</strong> Implement erosion and sediment control measures as required.</li>
-                        <li><strong>Stormwater Management:</strong> Manage stormwater runoff according to the approved plan.</li>
+// --- Engineering Step Page Component (displays individual step content) ---
+const EngineeringStepPage = ({ data, onNavigate }) => {
+    const { title, content, previousStepId, nextStepId } = data;
+
+    const getButtonText = (targetId, defaultPrefix) => {
+        if (!targetId) return '';
+        const targetPage = siteData.find(p => p.id === targetId);
+        if (!targetPage) return defaultPrefix;
+
+        if (targetPage.type === 'engineering-section-hub') {
+            return `Back to ${targetPage.title.replace(' Overview', '')}`;
+        }
+        if (targetPage.type === 'engineering-main-hub') {
+            return `Back to Engineering Guide`;
+        }
+         if (targetPage.id === 'landing-page') {
+            return `Back to Main Menu`;
+        }
+        return `${defaultPrefix}: ${targetPage.title}`;
+    };
+
+
+    return (
+        <section id={data.id} className="py-10">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-blue-800 mb-4">{title}</h2>
+            <div className="mb-6 p-6 bg-white rounded-lg shadow-md">
+                {content.description && <p className="text-gray-600 leading-relaxed mb-3" dangerouslySetInnerHTML={{ __html: content.description }}></p>}
+                {content.items && (
+                    <ul className="list-disc list-inside text-gray-600 leading-relaxed space-y-1">
+                        {content.items.map((item, itemIdx) => (
+                            <li key={itemIdx}>
+                                {typeof item === 'string' ? <span dangerouslySetInnerHTML={{ __html: item }} /> : (
+                                    <>
+                                        <span dangerouslySetInnerHTML={{ __html: item.text }} />
+                                        {item.subItems && (
+                                            <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+                                                {item.subItems.map((subItem, subIdx) => (
+                                                    <li key={subIdx} dangerouslySetInnerHTML={{ __html: subItem }} />
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </>
+                                )}
+                            </li>
+                        ))}
                     </ul>
-                    <li><strong>Invite Contractors to Bid on the Project:</strong> Prepare a bid package and invite qualified contractors to submit proposals.</li>
-                    <li><strong>Review Bid RFIs:</strong> Address any questions or requests for information from bidding contractors.</li>
-                    <li><strong>Review Bids:</strong> Evaluate the bids based on cost, qualifications, experience, and references.</li>
-                    <li><strong>Interview Contractors:</strong> Interview shortlisted contractors to assess their suitability for the project.</li>
-                    <li><strong>Select Contractor:</strong> Choose the contractor that best meets the project's needs and budget.</li>
-                </ul>
+                )}
+                {content.caution && (
+                    <p className="text-sm mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 font-medium">
+                        <i className="fas fa-exclamation-triangle mr-2"></i><span className="font-semibold">Caution:</span> {content.caution}
+                    </p>
+                )}
+                {content.note && (
+                     <p className="text-sm mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 font-medium">
+                        <i className="fas fa-info-circle mr-2"></i><span className="font-semibold">Note:</span> {content.note}
+                    </p>
+                )}
             </div>
-            <div class="mt-6 flex justify-between">
-                <button data-previous="design-phase" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Previous: Design Phase
-                </button>
-                <button data-next="construction-phase" class="next-btn">
-                    Next: Construction Phase
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </section>
 
-        <section id="construction-phase" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-4">Construction Phase</h2>
-            <div class="mb-6 p-6 bg-white rounded-lg shadow-lg">
-                <h3 class="step-title text-xl mb-3">6. Construction</h3>
-                <p class="step-description mb-2">
-                    Execute the flood adaptation project according to the approved design and schedule.
-                </p>
-                <ul class="list-disc list-inside step-description">
-                    <li><strong>Review the Construction Schedule & Final Budget:</strong> Ensure the project stays on track and within budget.</li>
-                    <li><strong>Build the Flood Adaptation:</strong> Oversee the construction process, ensuring compliance with the design documents, building codes, and historic preservation guidelines.</li>
-                </ul>
-            </div>
-            <div class="mt-6 flex justify-between">
-                <button data-previous="permitting-bidding" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Previous: Permitting & Bidding
-                </button>
-                <button data-next="conclusion" class="next-btn">
-                    Next: Conclusion
-                    <i class="fas fa-arrow-right"></i>
-                </button>
+            <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3">
+                {previousStepId && (
+                    <ActionButton
+                        text={getButtonText(previousStepId, 'Previous')}
+                        icon="fa-arrow-left"
+                        onClick={onNavigate}
+                        targetId={previousStepId}
+                    />
+                )}
+                {nextStepId && (
+                     <ActionButton
+                        text={getButtonText(nextStepId, 'Next')}
+                        icon={siteData.find(p=>p.id === nextStepId)?.type === 'engineering-main-hub' || siteData.find(p=>p.id === nextStepId)?.type === 'engineering-section-hub' || siteData.find(p=>p.id === nextStepId)?.id === 'landing-page' ? 'fa-level-up-alt' : 'fa-arrow-right'}
+                        onClick={onNavigate}
+                        targetId={nextStepId}
+                    />
+                )}
             </div>
         </section>
+    );
+};
 
-        <section id="conclusion" class="flowchart-step">
-            <h2 class="section-title text-2xl sm:text-3xl mb-4">Engineering Guide: Conclusion</h2>
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-                <p class="step-description">
-                    Adapting historic buildings to flood risks requires a careful and methodical approach. By following these engineering steps and working with qualified professionals, it's possible to protect these valuable structures for future generations while preserving their unique heritage.
-                </p>
-                <p class="note text-sm mt-4">
-                    <i class="fas fa-info-circle mr-1"></i><span class="font-semibold">Note:</span> This guide provides a general framework. Specific requirements and processes may vary depending on local regulations and the unique characteristics of the historic building.
-                </p>
-            </div>
-            <div class="mt-6 flex justify-between">
-                <button data-previous="construction-phase" class="prev-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Previous: Construction Phase
-                </button>
-                <button data-next="landing-page" class="next-btn">
-                     <i class="fas fa-home"></i>
-                    Back to Start
-                </button>
-            </div>
-        </section>
-    </div>
+// --- Main App Component ---
+function App() {
+    const [activePageId, setActivePageId] = useState(siteData[0].id);
+    const [currentPageData, setCurrentPageData] = useState(siteData.find(p => p.id === activePageId));
 
-    <script>
-        // Select all flowchart steps, action buttons (from landing page), next, and previous buttons
-        const flowchartSteps = document.querySelectorAll('.flowchart-step');
-        const actionButtons = document.querySelectorAll('.action-btn'); // Includes buttons on landing page
-        const nextButtons = document.querySelectorAll('.next-btn');
-        const prevButtons = document.querySelectorAll('.prev-btn');
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setCurrentPageData(siteData.find(p => p.id === activePageId));
+    }, [activePageId]);
 
-        // Select progress bar elements
-        const progressBarContainer = document.getElementById('progress-bar-container');
-        const progressBarFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progress-text');
-
-        let currentStep = 0; // Initialize currentStep to 0 (landing page)
-        const totalSteps = flowchartSteps.length; // Total number of sections including landing and funding
-
-        /**
-         * Updates the progress bar display.
-         * Progress bar is only shown for engineering guide steps.
-         */
-        function updateProgressBar() {
-            const currentStepElement = flowchartSteps[currentStep];
-            const nonEngineeringSteps = ['landing-page', 'funding-options'];
-
-            // Hide progress bar on landing and funding pages
-            if (nonEngineeringSteps.includes(currentStepElement.id)) {
-                progressBarContainer.style.display = 'none';
-                return;
-            }
-            // Show progress bar for all other (engineering) steps
-            progressBarContainer.style.display = 'block';
-
-            // Calculate the number of actual engineering guide steps
-            let engineeringStepsCount = 0;
-            let engineeringStepIds = [];
-            flowchartSteps.forEach(step => {
-                if (!nonEngineeringSteps.includes(step.id)) {
-                    engineeringStepsCount++;
-                    engineeringStepIds.push(step.id);
-                }
-            });
-
-            // Determine the current step number within the engineering guide (1-indexed)
-            let currentEngineeringStepNumber = 0;
-            const currentStepIndexInEngineering = engineeringStepIds.indexOf(currentStepElement.id);
-            if (currentStepIndexInEngineering !== -1) {
-                currentEngineeringStepNumber = currentStepIndexInEngineering + 1;
-            }
-
-
-            if (engineeringStepsCount <= 0) {
-                progressBarFill.style.width = '0%';
-                progressText.textContent = '';
-                return;
-            }
-
-            let progress = 0;
-            if (engineeringStepsCount > 1) {
-                 progress = ((currentEngineeringStepNumber - 1) / (engineeringStepsCount - 1)) * 100;
-            } else if (engineeringStepsCount === 1 && currentEngineeringStepNumber === 1) {
-                progress = 100; // If only one engineering step, it's 100% when on it.
-            }
-
-            progressBarFill.style.width = `${Math.max(0, Math.min(100, progress))}%`; // Ensure progress is between 0 and 100
-            progressText.textContent = `Step ${currentEngineeringStepNumber} of ${engineeringStepsCount}`;
+    const handleNavigate = (pageId) => {
+        if (siteData.find(p => p.id === pageId)) {
+            setActivePageId(pageId);
+        } else {
+            console.warn("Navigation target not found:", pageId);
         }
+    };
 
-        /**
-         * Shows the specified step and hides others. Updates button states and progress bar.
-         * @param {number} stepIndex - The index of the step to show.
-         */
-        function showStep(stepIndex) {
-            if (stepIndex < 0 || stepIndex >= totalSteps) {
-                console.warn("Attempted to navigate to an invalid step index:", stepIndex);
-                return;
-            }
+    const renderPage = () => {
+        if (!currentPageData) return <p className="text-red-500 text-center">Error: Page data not found for ID "{activePageId}".</p>;
 
-            const targetStepId = flowchartSteps[stepIndex].id;
-
-            flowchartSteps.forEach((step, index) => {
-                step.classList.toggle('active', index === stepIndex);
-            });
-            currentStep = stepIndex;
-            updateProgressBar(); // Update progress bar after step change
-
-            // Scroll to the top of the new step
-            try {
-                const activeStepElement = document.querySelector('.flowchart-step.active');
-                if (activeStepElement) {
-                    activeStepElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            } catch (e) {
-                console.error("Error scrolling to active step:", e);
-            }
-
-            // Update button states (disable/enable prev/next)
-            document.querySelectorAll('.prev-btn').forEach(button => {
-                const prevStepId = button.dataset.previous;
-                button.disabled = !prevStepId || (flowchartSteps[0].id === targetStepId && prevStepId !== 'landing-page'); // Disable if no prev or on first page unless prev is landing
-                 if (prevStepId === 'landing-page' && (targetStepId === 'introduction' || targetStepId === 'funding-options')) {
-                    button.disabled = false; // Always enable going back to landing
-                }
-            });
-
-            document.querySelectorAll('.next-btn, .action-btn[data-next]').forEach(button => {
-                const nextStepId = button.dataset.next;
-                const isLastEngineeringStep = flowchartSteps[totalSteps - 1].id === "conclusion" && targetStepId === "conclusion";
-                button.disabled = !nextStepId || (isLastEngineeringStep && nextStepId !== 'landing-page');
-
-                if (targetStepId === 'conclusion' && nextStepId === 'landing-page') {
-                    button.disabled = false; // Always enable "Back to Start" from conclusion
-                }
-                // Enable navigation from landing page to its defined "next" steps
-                if (targetStepId === 'landing-page' && (nextStepId === 'introduction' || nextStepId === 'funding-options')) {
-                    button.disabled = false;
-                }
-            });
+        switch (currentPageData.type) {
+            case 'landing':
+                return <LandingPage data={currentPageData} onNavigate={handleNavigate} />;
+            case 'funding':
+                return <FundingOptionsPage data={currentPageData} onNavigate={handleNavigate} />;
+            case 'engineering-main-hub':
+                return <EngineeringMainHubPage data={currentPageData} onNavigate={handleNavigate} />;
+            case 'engineering-section-hub':
+                return <EngineeringSectionHubPage data={currentPageData} onNavigate={handleNavigate} />;
+            case 'engineering-step':
+                return <EngineeringStepPage data={currentPageData} onNavigate={handleNavigate} />;
+            default:
+                return <p className="text-red-500 text-center">Error: Unknown page type "{currentPageData.type}".</p>;
         }
+    };
 
-        // Add event listeners to ALL buttons that navigate (action, next, prev)
-        document.querySelectorAll('.action-btn[data-next], .next-btn, .prev-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const targetStepId = this.dataset.next || this.dataset.previous;
-                if (targetStepId) {
-                    const targetStepIndex = Array.from(flowchartSteps).findIndex(step => step.id === targetStepId);
-                    if (targetStepIndex !== -1) {
-                        showStep(targetStepIndex);
-                    } else {
-                        console.warn("Target step ID not found:", targetStepId);
-                    }
+    return (
+        <Fragment>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+            <style jsx global>{`
+                body {
+                    font-family: 'Inter', sans-serif;
+                    scroll-behavior: smooth;
+                    background-color: #f3f4f6; /* bg-gray-100 */
+                    color: #1f2937; /* text-gray-800 */
                 }
-                // Handle the old funding options button separately if it doesn't have data-next (now it does)
-                // This is more of a fallback, the new button #funding-options-btn-nav has data-next
-                else if (this.id === 'funding-options-btn' && !this.dataset.next) {
-                    alert("Funding options page/section is coming soon!");
-                }
-            });
-        });
+            `}</style>
 
-        // Initialize the page by showing the first step (landing page)
-        document.addEventListener('DOMContentLoaded', () => {
-            showStep(currentStep); // currentStep is 0 by default
-        });
-    </script>
-</body>
-</html>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-screen">
+                {/* Progress bar removed for this version due to navigation complexity */}
+                {renderPage()}
+            </div>
+        </Fragment>
+    );
+}
+
+export default App;
